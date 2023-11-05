@@ -25,6 +25,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
+
 package com.apress.cems.pojos.services.impl;
 
 import com.apress.cems.dao.*;
@@ -48,6 +49,7 @@ import java.util.*;
  * @since 1.0
  */
 public class SimpleOperationsService implements OperationsService {
+
     private CriminalCaseRepo criminalCaseRepo;
     private EvidenceRepo evidenceRepo;
     private DetectiveRepo detectiveRepo;
@@ -62,17 +64,27 @@ public class SimpleOperationsService implements OperationsService {
     public CriminalCase createCriminalCase(CaseType caseType, String shortDescription, String badgeNo, Map<Evidence, String> evidenceMap) {
         // get detective
         // TODO 1. retrieve detective  (according to diagram 2.5)
+        Optional<Detective> optionalDetective = detectiveRepo.findByBadgeNumber(badgeNo);
 
         // create a criminal case instance
         CriminalCase criminalCase = new CriminalCase();
         // TODO 2. set fields; use ifPresent(..) to set(or not) the leadDetective field
+        optionalDetective.ifPresent(criminalCase::setLeadInvestigator);
+        criminalCase.setType(caseType);
+        criminalCase.setShortDescription(shortDescription);
 
         evidenceMap.forEach((ev, storageName) -> {
             // TODO 3. retrieve storage, throw ServiceException if not found
+            Storage storage = storageRepo.findByName(storageName).orElseThrow(() -> new ServiceException("Storage " + storageName + " not found"));
             // TODO 4. if storage is found, link it to the evidence and add evidence to the case
+            ev.setStorage(storage);
+            criminalCase.getEvidenceSet().add(ev);
+            evidenceRepo.save(ev);
         });
 
         // TODO 5. save the criminal case instance
+        criminalCaseRepo.save(criminalCase);
+
         return criminalCase;
     }
 
